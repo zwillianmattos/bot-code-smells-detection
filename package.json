@@ -1,0 +1,16 @@
+{
+  "name": "bot-sarcastico-code-smells",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node testBot.js"
+  },
+  "dependencies": {
+    "@octokit/rest": "^18.12.0",
+    "@slack/web-api": "^6.7.2",
+    "dotenv": "^16.0.3",
+    "node-cron": "^3.0.2",
+    "openai": "^3.2.1"
+  }
+}
