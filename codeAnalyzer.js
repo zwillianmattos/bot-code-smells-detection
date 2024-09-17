@@ -3,37 +3,65 @@ const { Octokit } = require('@octokit/rest');
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 async function analyzeRepositories() {
-  const repos = await octokit.repos.listForOrg({
-    org: process.env.GITHUB_ORG,
-    type: 'all',
-  });
-
-  const codeSmells = [];
-
-  for (const repo of repos.data) {
-    const files = await listFiles(repo.name);
+  try {
+    console.log(`Listando repositórios para: ${process.env.GITHUB_ORG}`);
+    const repos = await octokit.repos.listForOrg({
+      org: process.env.GITHUB_ORG,
+      type: 'all',
+    });
     
-    for (const file of files) {
-      if (file.name.endsWith('.js')) {
-        const jsSmells = await analyzeJavaScriptFile(repo.name, file.path);
-        codeSmells.push(...jsSmells);
-      } else if (file.name.endsWith('.php')) {
-        const phpSmells = await analyzePHPFile(repo.name, file.path);
-        codeSmells.push(...phpSmells);
+    console.log(`Encontrados ${repos.data.length} repositórios.`);
+
+    const codeSmells = [];
+
+    for (const repo of repos.data) {
+      console.log(`Analisando repositório: ${repo.name}`);
+      const files = await listFiles(repo.name, '');
+      
+      for (const file of files) {
+        console.log(`Analisando arquivo: ${file.path}`);
+        if (file.name.endsWith('.js')) {
+          const jsSmells = await analyzeJavaScriptFile(repo.name, file.path);
+          codeSmells.push(...jsSmells);
+        } else if (file.name.endsWith('.php')) {
+          const phpSmells = await analyzePHPFile(repo.name, file.path);
+          codeSmells.push(...phpSmells);
+        } else if (file.isDirectory) {
+          const subFiles = await listFiles(repo.name, file.path);
+          codeSmells.push(...subFiles);
+        }
       }
     }
-  }
 
-  return codeSmells;
+    return codeSmells;
+  } catch (error) {
+    console.error('Erro ao analisar repositórios:', error);
+    if (error.response) {
+      console.error('Detalhes do erro:', error.response.data);
+    }
+    throw error;
+  }
 }
 
-async function listFiles(repo) {
+async function listFiles(repo, path) {
   const { data } = await octokit.repos.getContent({
     owner: process.env.GITHUB_ORG,
     repo: repo,
-    path: '',
+    path: path,
   });
-  return data;
+
+  let allFiles = [];
+
+  for (const item of data) {
+    if (item.type === 'file') {
+      allFiles.push(item);
+    } else if (item.type === 'dir') {
+      const subFiles = await listFiles(repo, item.path);
+      allFiles = allFiles.concat(subFiles);
+    }
+  }
+
+  return allFiles;
 }
 
 async function analyzeJavaScriptFile(repo, path) {

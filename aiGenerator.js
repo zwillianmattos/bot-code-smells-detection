@@ -16,8 +16,11 @@ A mensagem deve incluir:
 2. Uma piada relacionada ao tipo de code smell
 3. Uma sugestão humorística de como corrigir o problema
 
-Mantenha a mensagem concisa, com no máximo 3 frases.`;
+Mantenha a mensagem concisa, com no máximo 3 frases.
 
+Mostre o código que gerou o code smell`;
+
+console.log(prompt);
   const response = await openai.createCompletion({
     model: 'text-davinci-002',
     prompt: prompt,
